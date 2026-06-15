@@ -1,7 +1,9 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-
+import google.generativeai as genai
+genai.configure(api_key="YOUR_API_KEY")
+model=genai.GenerativeModel("gemini-2.0-flash")
 conn = sqlite3.connect("health.db", check_same_thread=False)
 c = conn.cursor()
 
@@ -26,22 +28,47 @@ st.subheader("Patient Details Form")
 name = st.text_input("Full Name")
 dob = st.date_input("Date of Birth")
 email = st.text_input("Email Address")
+import re
+
+
+
+if email:
+    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+
+    if not re.match(pattern, email):
+        st.error("Please enter a valid email address")
 
 glucose = st.number_input("Glucose Level")
 hemoglobin = st.number_input("Hemoglobin Level")
 cholesterol = st.number_input("Cholesterol Level")
+prompt = f"""
+Patient Blood Report:
 
-remarks = st.text_area("Remarks")
+Glucose: {glucose}
+Hemoglobin: {hemoglobin}
+Cholesterol: {cholesterol}
 
-if glucose > 0.12:
-    prediction = "High Glucose Level Detected"
-else:
-    prediction = "Glucose Level Normal"
+Predict possible health condition and give a short remark.
+"""
 
+try:
+    response = model.generate_content(prompt)
+    remarks = response.text
+except Exception as e:
+    remarks = str(e)
 
 if st.button("Save Record"):
+    
 
-    final_remarks = remarks if remarks else prediction
+    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+
+    if not re.match(pattern, email):
+        st.error("Invalid Email Address")
+
+    else:
+        
+
+     final_remarks = remarks if remarks else prediction
 
     c.execute("""
     INSERT INTO patients
