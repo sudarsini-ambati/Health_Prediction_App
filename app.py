@@ -2,6 +2,8 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import google.generativeai as genai
+import re
+from datetime import date
 genai.configure(api_key="YOUR_API_KEY")
 model=genai.GenerativeModel("gemini-2.0-flash")
 conn = sqlite3.connect("health.db", check_same_thread=False)
@@ -27,7 +29,13 @@ st.subheader("Patient Details Form")
 
 name = st.text_input("Full Name")
 dob = st.date_input("Date of Birth")
+if dob > date.today():
+    st.error("Date of Birth cannot be a future date.")
 email = st.text_input("Email Address")
+
+if name:
+    if not re.match(r"^[A-Za-z ]+$", name):
+        st.error("Name should contain only alphabets and spaces.")
 import re
 
 
@@ -39,8 +47,14 @@ if email:
         st.error("Please enter a valid email address")
 
 glucose = st.number_input("Glucose Level")
+if glucose <= 0:
+    st.error("Glucose value must be greater than zero.")
 hemoglobin = st.number_input("Hemoglobin Level")
+if hemoglobin <= 0:
+    st.error("Hemoglobin value must be greater than zero.")
 cholesterol = st.number_input("Cholesterol Level")
+if cholesterol <= 0:
+    st.error("Cholesterol value must be greater than zero.")
 prompt = f"""
 Patient Blood Report:
 
@@ -58,9 +72,28 @@ except Exception as e:
     remarks = str(e)
 
 if st.button("Save Record"):
+    if not re.match(r"^[A-Za-z ]+$", name):
+        st.error("Please enter a valid name.")
+
+    elif dob > date.today():
+       st.error("Date of Birth cannot be a future date.")
+
+    elif not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
+       st.error("Please enter a valid email.")
+
+    elif glucose <= 0:
+       st.error("Enter a valid glucose value.")
+
+    elif hemoglobin <= 0:
+       st.error("Enter a valid hemoglobin value.")
+
+    elif cholesterol <= 0:
+       st.error("Enter a valid cholesterol value.")
+
+    else:
     
 
-    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+     pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
 
     if not re.match(pattern, email):
         st.error("Invalid Email Address")
@@ -71,7 +104,7 @@ if st.button("Save Record"):
      final_remarks = remarks if remarks else prediction
 
     c.execute("""
-    INSERT INTO patients
+    INSERT INTO patients    
     (name,dob,email,glucose,hemoglobin,cholesterol,remarks)
     VALUES (?,?,?,?,?,?,?)
     """,
